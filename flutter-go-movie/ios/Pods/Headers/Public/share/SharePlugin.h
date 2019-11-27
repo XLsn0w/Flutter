@@ -1,0 +1,1 @@
+../../../../.symlinks/plugins/share/ios/Classes/SharePlugin.h
