@@ -1,0 +1,15 @@
+# Copyright 2018 <chaishushan{AT}gmail.com>. All rights reserved.
+# Use of this source code is governed by a BSD-style
+# license that can be found in the LICENSE file.
+
+name: helloworld
+version: 0.0.1
+author: "chai2010 <chaishushan@gmail.com>"
+homepage: https://github.com/chai2010
+description: Example code.
+environment:
+  sdk: '>=2.0.0 <3.0.0'
+
+dev_dependencies:
+  test: ^1.5.1
+

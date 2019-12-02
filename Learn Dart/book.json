@@ -1,0 +1,20 @@
+{
+	"gitbook": "3.x",
+	"title": "Dart学习笔记",
+	"description": "Dart学习笔记",
+	"language": "zh-hans",
+
+	"structure": {
+		"readme": "preface.md"
+	},
+
+	"pluginsConfig": {
+		"theme-default": {
+			"showLevel": false
+		}
+	},
+
+	"plugins": [
+		"-search"
+	]
+}
