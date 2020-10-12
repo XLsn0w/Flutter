@@ -602,3 +602,118 @@ main() {
     print(str);
   });
 }
+
+## Flutter widget组件简介
+一、简介
+Flutter Widget采用现代响应式框架构建，核心思想是用widget组件来构建UI，当widget的状态发生变化时，widget也会对应重新构建UI，Flutrer会对比前后变化的不同，以确定底层渲染树从一个状态转换到下一个状态所需的最小更改。
+
+二、入口程序
+通过flutter create创建的项目，我们可以看到在lib目录下有一个默认的mian.dart文件，下面来看下这个文件里的内容。
+
+Flutter跟Java程序一样，程序要跑起来就必须要一个入口，Java中用的是main方法当作入口，Flutter也是一样
+
+void main() => runApp(MyApp());
+
+这个main就是flutter的入口，使用runApp函数可以将给定的根组件填满整个屏幕。
+
+三、基础的widget
+3.1 无状态和有状态的组件
+接着看flutter create创建出来的这个项目代码：
+
+class MyApp extends StatelessWidget {}
+class MyHomePage extends StatefulWidget {}
+
+StatelessWidget表示无状态的组件，这个意味着它里面的值都是不可变的
+
+StatefulWidget表示有状态的组件，这个意味着StatefulWidget持有的状态在widget的生命周期中发生改变，创建一个StatefulWidget需要两个类：
+
+class MyHomePage extends StatefulWidget {
+  @override 
+  _MyHomePageState createState() => _MyHomePageState();
+}
+class _MyHomePageState extends State<MyHomePage> {
+  @override 
+  Widget build(BuildContext context){
+    return Container();
+  }
+}
+
+StatefulWidget类本身是不变的，但State类在Widget中的生命周期是始终存在的
+
+3.2 常用的基础Widget
+Text：带格式的文本。相当于Android中的TextView
+Row、Column：水平和垂直方向的布局组件。符合Vue中的Flexbox布局模型，相当于Android中的LinearLayout的orientation=horizontal和vertical
+Stack：允许子widget堆叠，可以用Positioned来定位上下左右的位置。相当于Android中的RelativeLayout
+Container：创建一个矩形视觉元素，可以通过BoxDecoration设置background、边框、阴影。相当于C#中的panel
+四、Material组件
+几乎所有的dart文件中都会引入flutter/material.dart这个包，这个是一个实现了Material Design风格的组件库，如flutter create创建出来的这个项目代码中的MaterialApp、Scaffold、Navigator等组件
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: MyHomePage(title: 'Flutter Demo Home Page'),
+    );
+  }
+}
+class MyHomePage extends StatefulWidget {
+  MyHomePage({Key key, this.title}) : super(key: key);
+  final String title;
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+class _MyHomePageState extends State<MyHomePage> {
+  int _counter = 0;
+
+  void _incrementCounter() {
+    setState(() {
+      _counter++;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              'You have pushed the button this many times:',
+            ),
+            Text(
+              '$_counter',
+              style: Theme.of(context).textTheme.display1,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        tooltip: 'Increment',
+        child: Icon(Icons.add),
+      ),
+    );
+  }
+}
+
+五、State的生命周期
+Flutter程序可以看成是一个巨大的状态机器，用户的操作、网络请求、系统事件都是推动这个状态机运行的触发点，触发点通过setState来推动状态机的改变。
+
+构造函数-->initState-->didChangeDepencies-->build-->deactivate-->dispose
+
+构造函数：调用一次
+initState：调用一次，在这里可以做一些初始化的工作，比如变量初始化、调用网络接口。相当于Android中的onCreate
+didChangeDependencies：多次调用，在initState之后立刻调用，在InheritedWidget rebuild时也会触发调用
+build：调用多次，第一次绘制界面时调用，当setState时也会被触发调用
+didUpdateWidget：组件状态改变时调用，可能会调用多次，在widget重新构建时，Flutter framework会调用Widget.canUpdate来检测Widget树中同一位置的新旧节点，然后决定是否需要更新，如果Widget.canUpdate返回true则会调用此回调。正如之前所述，Widget.canUpdate会在新旧widget的key和runtimeType同时相等时会返回true，也就是说在在新旧widget的key和runtimeType同时相等时didUpdateWidget()就会被调用。如rebuild、hot reload
+deactivate：调用多次，当移除渲染树时调用，比如跳转新界面、栈顶界面被销毁时都会调用。相当于Android中的onDetatch和onResume
+dispose：调用一次，组件即将销毁时调用。相当于Android中的onDestroy
+
