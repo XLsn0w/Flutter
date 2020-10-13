@@ -1,6 +1,12 @@
 # Flutter
 Flutter是谷歌的移动UI框架，可以快速在iOS和Android上构建高质量的原生用户界面。 Flutter可以与现有的代码一起工作。在全世界，Flutter正在被越来越多的开发者和组织使用，并且Flutter是完全免费、开源的。
 
+Widget与Element
+
+Widget实际上就是Element的配置数据, Widget的功能是描述一个UI元素的一个配置数据, 而真正的UI渲染是由Element构成
+由于Element是通过Widget生成，所以它们之间有对应关系，所以在大多数场景，我们可以宽泛地认为Widget就是指UI控件或UI渲染
+一个Widget对象可以对应多个Element对象。这很好理解，根据同一份配置（Widget），可以创建多个实例（Element）
+
 ## Dart语言
 
 在Dart中，一切都是对象，一切对象都是class的实例，哪怕是数字类型、方法甚至null都是对象，所有的对象都是继承自Object
