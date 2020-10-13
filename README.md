@@ -7,6 +7,129 @@ Widget实际上就是Element的配置数据, Widget的功能是描述一个UI元
 由于Element是通过Widget生成，所以它们之间有对应关系，所以在大多数场景，我们可以宽泛地认为Widget就是指UI控件或UI渲染
 一个Widget对象可以对应多个Element对象。这很好理解，根据同一份配置（Widget），可以创建多个实例（Element）
 
+## Flutter的UIKit
+Text == UILabel/TextView
+```
+// 两种构造函数
+// 显示普通的文本
+ const Text(this.data, {
+    Key key,
+    this.style,
+    this.textAlign,
+    this.textDirection,
+    this.locale,
+    this.softWrap,
+    this.overflow,
+    this.textScaleFactor,
+    this.maxLines,
+    this.semanticsLabel,
+  }) : assert(data != null),
+       textSpan = null,
+       super(key: key);
+
+  /// 段落式文本,可以给文本中的每个textSpan设置其样式
+  const Text.rich(this.textSpan, {
+    Key key,
+    this.style,
+    this.textAlign,
+    this.textDirection,
+    this.locale,
+    this.softWrap,
+    this.overflow,
+    this.textScaleFactor,
+    this.maxLines,
+    this.semanticsLabel,
+  }): assert(textSpan != null),
+      data = null,
+      super(key: key);
+
+
+```
+
+Image == UIImageView
+```
+  const Image({
+    Key key,
+    // 一个图片对象ImageProvider, 可设置NetworkImage(), FileImage(), MemoryImage()三种对象
+    @required this.image,
+    // 图片的描述, String
+    this.semanticLabel,
+    this.excludeFromSemantics = false,
+    // 图片的宽度, double
+    this.width,
+    // 图片的高度, double
+    this.height,
+    // 图像的颜色, 用于和图片混合的颜色, 结合colorBlendMode使用
+    this.color,
+    // 颜色和图片混合的状态, BlendMode
+    this.colorBlendMode,
+    // 图像在布局中分配的空间, BoxFit
+    this.fit,
+    // 图像边界内对齐图像, Alignment
+    this.alignment = Alignment.center,
+    // 未充分填充容器时,是否重复显示图片
+    this.repeat = ImageRepeat.noRepeat,
+    // 九片图像的中心切点, Rect
+    this.centerSlice,
+    // 是否在图像的方向上绘制图像 TextDirection
+    this.matchTextDirection = false,
+    // 当图像提供者发生变化时，是继续显示旧图像（true）还是暂时不显示（false）
+    this.gaplessPlayback = false,
+    // 设置图片的过滤质量
+    this.filterQuality = FilterQuality.low,
+  }) 
+
+```
+图像在布局中分配的空间, BoxFit枚举值
+
+fill: 填充满容器空间, 图片会被拉伸
+contain: 以容器的大小等比例缩放图片
+cover: 填充整个容器, 图片会被剪切
+fitWidth: 以容器的宽度, 等比例缩放图片
+fitHeight: 以容器的高度, 等比例的缩放图片
+none: 以图片的实际大小显示
+scaleDown: 居中显示, 图片不会拉伸, 以宽高中最小的尺寸为标准
+
+```
+Image.network(
+  'https://titanjun.oss-cn-hangzhou.aliyuncs.com/flutter/catimage.jpg',
+  width: 100,
+  height: 100,
+  fit: BoxFit.scaleDown,
+  alignment: Alignment.center,
+)
+```
+
+缓存
+
+ImageCache是ImageProvider默认使用的图片缓存。ImageCache使用的是LRU的算法
+默认可以存储1000张图片。如果觉得缓存太大，可以通过设置ImageCache的maximumSize属性来控制缓存图片的数量。
+也可以通过设置maximumSizeBytes来控制缓存的大小（默认缓存大小10MB）
+
+Image.asset
+
+Flutter应用程序可以包含代码和 assets（有时称为资源）
+asset是打包到程序安装包中的，可在运行时访问
+常见类型的asset包括静态数据（例如JSON文件），配置文件，图标和图片（JPEG，WebP，GIF，动画WebP / GIF，PNG，BMP和WBMP）
+Flutter使用pubspec.yaml文件（位于项目根目录），来识别应用程序所需的asset
+
+图片所在的文件夹images和pubspec.yaml需要在同一目录下, 否则pubspec.yaml文件中, 设置资源路径的时候要对应修改
+images图片文件夹中2.0x和3.0x图片要分别创建两个文件夹, 并把2倍和3倍图分别放在不同的文件夹中, 切文件的名字不要在带@2x和@3x字样
+
+
+按钮 == UIButton
+
+Flutter提供了RaisedButton、FlatButton、OutlineButton和IconButton四种按钮, 除了IconButton之外都是继承自MaterialButton
+所有Material库中的按钮都有如下相同点：
+
+按下时都会有“水波动画”。
+有一个onPressed属性来设置点击回调，当按钮按下时会执行该回调，如果不提供该回调则按钮会处于禁用状态，禁用状态不响应用户点击
+
+
+MaterialButton
+MaterialButton是除IconButton按钮之外的其他按钮的父类, 下面介绍一下各属性的使用
+
+
 ## Dart语言
 
 在Dart中，一切都是对象，一切对象都是class的实例，哪怕是数字类型、方法甚至null都是对象，所有的对象都是继承自Object
