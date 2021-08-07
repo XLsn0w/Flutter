@@ -1,5 +1,831 @@
 # Flutter
-Flutter是谷歌的移动UI框架，可以快速在iOS和Android上构建高质量的原生用户界面。 Flutter可以与现有的代码一起工作。在全世界，Flutter正在被越来越多的开发者和组织使用，并且Flutter是完全免费、开源的。
+Flutter是谷歌的移动UI框架，可以快速在iOS和Android上构建高质量的原生用户界面。 
+Flutter可以与现有的代码一起工作。在全世界，Flutter正在被越来越多的开发者和组织使用，并且Flutter是完全免费、开源的。
+
+## iOS知识
+
+一.HTTP post的body体使用form-urlencoded和multipart/form-data的区别。
+1）application/x-www-form-urlencoded：
+窗体数据被编码为名称/值对，这是标准且默认的编码格式。当action为get时候，客户端把form数据转换成一个字串append到url后面，用?分割。当action为post时候，浏览器把form数据封装到http body中，然后发送到server。
+2）multipart/form-data：
+multipart表示的意思是单个消息头包含多个消息体的解决方案。multipart媒体类型对发送非文本的各媒体类型是有用的。一般多用于文件上传。
+multipart/form-data只是multipart的一种。目前常用的有以下这些类型(注：任何一种执行时无法识别的multipart子类型都被视为子类型"mixed")
+二.给你1w让你设计一种机制检测UIViewController的内存泄漏，你会怎么做
+如果Controller被释放了，但其曾经持有过的子对象如果还存在，那么这些子对象就是泄漏的可疑目标。
+一个小示例：子对象（比如view）建立一个对controller的weak引用，如果Controller被释放，这个weak引用也随之置为nil。那怎么知道子对象没有被释放呢？用一个单例对象每个一小段时间发出一个ping通知去ping这个子对象，如果子对象还活着就会一个pong通知。所以结论就是：如果子对象的controller已不存在，但还能响应这个ping通知，那么这个对象就是可疑的泄漏对象。
+三.[通过[UIImage imageNamed:]生成的对象什么时候被释放？]
+使用imageNamed这个方法生成的UIImage对象,会在应用的bundle中寻找图片,如果找到则Cache到系统缓存中,作为内存的cache,而程序员是无法操作cache的,只能由系统自动处理,如果我们需要重复加载一张图片,那这无疑是一种很好的方式,因为系统能很快的从内存的cache找到这张图片,但是试想,如果加载很多很大的图片的时候,内存消耗过大的时候,就会会强制释放内存，即会遇到内存警告(memory warnings).
+由于在iOS系统中释放图片的内存比较麻烦,所以冲易产生内存泄露。
+像[[UIImageView alloc] init]还有一些其他的 init 方法，返回的都是 autorelease 对象。而 autorelease 不能保证什么时候释放，所以不一定在引用计数为 0 就立即释放，只能保证在 autoreleasepool 结尾的时候释放。
+像 UIImage 还有 NSData 这种，大部分情况应该是延迟释放的，可以理解为到 autoreleasepool 结束的时候才释放。
+四.applicationDidBecomeActive和applicationWillEnterForeground在哪些场景下被调用呢？举例越多越好
+1）applicationWillResignActive（将进入后台）
+对应applicationWillEnterForeground（将进入前台）
+程序将要失去Active状态时调用，比如按下Home键或有电话信息进来，这个方法用来
+
+暂停正在执行的任务；
+禁止计时器；
+减少OpenGL ES帧率；
+若为游戏应暂停游戏；
+
+总结为一个字：停！
+2）applicationDidEnterBackground（已经进入后台）
+对应applicationDidBecomeActive（已经变成前台）
+程序已经进入后台时调用，这个方法用来
+
+释放共享资源；
+保存用户数据（写到硬盘）；
+作废计时器；
+保存足够的程序状态以便下次恢复；总结为4个字：释放、保存！
+
+五.dSYM我们可以如何分析的
+方法1 使用XCode
+这种方法可能是最容易的方法了。
+
+要使用Xcode符号化 crash log，你需要下面所列的3个文件：
+crash报告（.crash文件）
+符号文件 (.dsymb文件)
+应用程序文件 (appName.app文件，把IPA文件后缀改为zip，然后解压，Payload目录下的appName.app文件), 这里的appName是你的应用程序的名称。
+把这3个文件放到同一个目录下，打开Xcode的Window菜单下的organizer，然后点击Devices tab，然后选中左边的Device Logs。
+然后把.crash文件拖到Device Logs或者选择下面的import导入.crash文件。
+这样你就可以看到crash的详细log了。
+
+方法2 使用命令行工具symbolicatecrash
+
+有时候Xcode不能够很好的符号化crash文件。我们这里介绍如何通过symbolicatecrash来手动符号化crash log。
+在处理之前，请依然将“.app“, “.dSYM”和 ".crash"文件放到同一个目录下。现在打开终端(Terminal)然后输入如下的命令：
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+然后输入命令：
+/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/Library/PrivateFrameworks/DTDeviceKitBase.framework/Versions/A/Resources/symbolicatecrash appName.crash appName.app > appName.log
+现在，符号化的crash log就保存在appName.log中了。
+
+方法3 使用命令行工具atos
+
+如果你有多个“.ipa”文件，多个".dSYMB"文件，你并不太确定到底“dSYMB”文件对应哪个".ipa"文件，那么，这个方法就非常适合你。
+特别当你的应用发布到多个渠道的时候，你需要对不同渠道的crash文件，写一个自动化的分析脚本的时候，这个方法就极其有用。
+具体方法 请百度
+
+六.多线程有哪几种？你更倾向于哪一种？
+
+NSThread
+Cocoa NSOperation （使用NSOperation和NSOperationQueue）
+GCD （Grand Central Dispatch）
+
+1.NSThread:(两种创建方式)
+1. [NSThread detachNewThreadSelector:@selector(doSomething:) toTarget:self withObject:nil];
+2.
+3.NSThread *myThread = [[NSThread alloc] initWithTarget:self selector:@selector(doSomething:) object:nil];
+4.
+5.[myThread start];
+6.
+复制代码
+优点：NSThread 比其他两个轻量级。 缺点：需要自己管理线程的生命周期，线程同步，线程同步时对数据的加锁会有一定的系统开销。
+2.Cocoa Operation
+1.NSOperationQueue*oprationQueue= [[NSOperationQueuealloc] init];
+2.
+3.oprationQueueaddOperationWithBlock:^{
+4.
+5.//这个block语句块在子线程中执行
+6.
+7.}
+复制代码
+优点：不需要关心线程管理，数据同步的事情。 Cocoa Operation 相关的类是 NSOperation ，NSOperationQueue。NSOperation是个抽象类，使用它必须用它的子类，可以实现它或者使用它定义好的两个子类：NSInvocationOperation 和 NSBlockOperation。创建NSOperation子类的对象，把对象添加到NSOperationQueue队列里执行，我们会把我们的执行操作放在NSOperation中main函数中。
+3.GCD Grand Central Dispatch (GCD)是Apple开发的一个多核编程的解决方法，GCD是一个替代诸如NSThread, NSOperationQueue, NSInvocationOperation等技术的很高效和强大的技术。它让程序平行排队的特定任务，根据可用的处理资源，安排他们在任何可用的处理器核心上执行任务，一个任务可以是一个函数(function)或者是一个block。 dispatch queue分为下面三种： private dispatch queues，同时只执行一个任务，通常用于同步访问特定的资源或数据。 global dispatch queue，可以并发地执行多个任务，但是执行完成的顺序是随机的。 Main dispatch queue 它是在应用程序主线程上执行任务的。
+七.单例的弊端
+优点：
+1：一个类只被实例化一次，提供了对唯一实例的受控访问。
+2：节省系统资源
+3：允许可变数目的实例。
+缺点：
+1：一个类只有一个对象，可能造成责任过重，在一定程度上违背了“单一职责原则”。
+2：由于单例模式中没有抽象层，因此单例类的扩展有很大的困难。
+3：滥用单例将带来一些负面问题，如为了节省资源将数据库连接池对象设计为的单例类，可能会导致共享连接池对象的程序过多而出现连接池溢出；如果实例化的对象长时间不被利用，系统会认为是垃圾而被回收，这将导致对象状态的丢失。
+八.App启动过慢，因素有哪些？欢迎讨论。
+1. App启动过程
+
+解析Info.plist
+
+
+加载相关信息，例如如闪屏
+沙箱建立、权限检查
+
+
+Mach-O加载
+
+
+如果是胖二进制文件，寻找合适当前CPU类别的部分
+加载所有依赖的Mach-O文件（递归调用Mach-O加载的方法）
+定位内部、外部指针引用，例如字符串、函数等
+执行声明为attribute((constructor))的C函数
+加载类扩展（Category）中的方法
+C++静态对象加载、调用ObjC的 +load 函数
+
+
+程序执行
+
+
+调用main()
+调用UIApplicationMain()
+调用applicationWillFinishLaunching
+
+2、影响启动性能的因素
+
+main()函数之前耗时的影响因素
+
+
+动态库加载越多，启动越慢。
+ObjC类越多，启动越慢
+C的constructor函数越多，启动越慢
+C++静态对象越多，启动越慢
+ObjC的+load越多，启动越慢
+
+
+main()函数之后耗时的影响因素
+
+
+执行main()函数的耗时
+执行applicationWillFinishLaunching的耗时
+rootViewController及其childViewController的加载、view及其subviews的加载
+
+
+另外参考一下今日头条的启动优化方案
+
+针对于今日头条这个App我们可以优化的点如下：
+
+纯代码方式而不是storyboard加载首页UI。
+对didFinishLaunching里的函数考虑能否挖掘可以延迟加载或者懒加载，需要与各个业务方pm和rd共同check 对于一些已经下线的业务，删减冗余代码。
+对于一些与UI展示无关的业务，如微博认证过期检查、图片最大缓存空间设置等做延迟加载。
+对实现了+load()方法的类进行分析，尽量将load里的代码延后调用。
+上面统计数据显示展示feed的导航控制器页面(NewsListViewController)比较耗时，对于viewDidLoad以及viewWillAppear方法中尽量去尝试少做，晚做，不做。
+
+九.如何防止反编译？
+
+本地数据加密。
+
+
+iOS应用防反编译加密技术之一：对NSUserDefaults，sqlite存储文件数据加密，保护帐号和关键信息
+
+
+URL编码加密。
+
+
+iOS应用防反编译加密技术之二：对程序中出现的URL进行编码加密，防止URL被静态分析
+
+
+网络传输数据加密。
+
+
+iOS应用防反编译加密技术之三：对客户端传输数据提供加密方案，有效防止通过网络接口的拦截获取数据
+
+
+方法体，方法名高级混淆。
+
+
+iOS应用防反编译加密技术之四：对应用程序的方法名和方法体进行混淆，保证源码被逆向后无法解析代码
+
+
+程序结构混排加密。
+
+
+iOS应用防反编译加密技术之五：对应用程序逻辑结构进行打乱混排，保证源码可读性降到最低
+
+十.UDP和TCP的区别于联系
+
+TCP为传输控制层协议，为面向连接、可靠的、点到点的通信；
+UDP为用户数据报协议，非连接的不可靠的点到多点的通信；
+TCP侧重可靠传输，UDP侧重快速传输。
+
+十一.TCP连接的三次握手
+第一次握手：客户端发送 syn 包(syn=j)到服务器，并进入 SYN_SEND 状态，等待服务器确认；
+第二次握手：服务器收到 syn 包，必须确认客户的 SYN（ack=j+1），同时自己也发送一个 SYN 包（syn=k），即 SYN+ACK 包，此时服务器进入 SYN_RECV 状态；
+第三次握手：客户端收到服务器的SYN＋ACK包，向服务器发送确认包ACK(ack=k+1)，此包发送完毕，客户端和服务器进入 ESTABLISHED 状态，完成三次握手。
+握手过程中传送的包里不包含数据，三次握手完毕后，客户端与服务器才正式开始传送数据。理想状态下，TCP 连接一旦建立，在通信双方中的任何一方主动关闭连接之前，TCP 连接都将被一直保持下去。断开连接时服务器和客户端均可以主动发起断开 TCP 连接的请求，断开过程需要经过“四次握手”（过程就不细写了，就是服务器和客户端交互，最终确定断开）
+
+十二.Scoket连接和HTTP连接有什么区别
+区别：
+
+
+HTTP协议是基于TCP连接的，是应用层协议，主要解决如何包装数据。Socket是对TCP/IP协议的封装，Socket本身并不是协议，而是一个调用接口（API），通过Socket，我们才能使用TCP/IP协议。
+
+
+HTTP连接：短连接，客户端向服务器发送一次请求，服务器响应后连接断开，节省资源。服务器不能主动给客户端响应（除非采用HTTP长连接技术），iPhone主要使用类NSURLConnection。
+
+
+Socket连接：长连接，客户端跟服务器端直接使用Socket进行连接，没有规定连接后断开，因此客户端和服务器段保持连接通道，双方可以主动发送数据，一般多用于游戏.Socket默认连接超时时间是30秒，默认大小是8K（理解为一个数据包大小）。
+
+
+十三.HTTP协议的特点，关于HTTP请求GET和POST的区别
+GET和POST的区别：
+
+
+HTTP超文本传输协议，是短连接，是客户端主动发送请求，服务器做出响应，服务器响应之后，链接断开。HTTP是一个属于应用层面向对象的协议，HTTP有两类报文：请求报文和响应报文。
+
+
+HTTP请求报文：一个HTTP请求报文由请求行、请求头部、空行和请求数据4部分组成。
+
+
+HTTP响应报文：由三部分组成：状态行、消息报头、响应正文。
+
+
+GET请求：参数在地址后拼接，没有请求数据，不安全（因为所有参数都拼接在地址后面），不适合传输大量数据（长度有限制，为1024个字节）。
+
+
+
+GET提交、请求的数据会附在URL之后，即把数据放置在HTTP协议头< requestline>中。
+以分割URL和传输数据，多个参数用&连接。如果数据是英文字母或数字，原样发送，
+如果是空格，转换为+，如果是中文/其他字符，则直接把字符串用BASE64加密。
+
+
+
+POST请求：参数在请求数据区放着，相对GET请求更安全，并且数据大小没有限制。把提交的数据放置在HTTP包的包体< request-body>中.
+
+
+GET提交的数据会在地址栏显示出来，而POST提交，地址栏不会改变。
+
+
+传输数据的大小：
+
+GET提交时，传输数据就会受到URL长度限制，POST由于不是通过URL传值，理论上书不受限。
+
+安全性：
+
+
+POST的安全性要比GET的安全性高；
+
+
+通过GET提交数据，用户名和密码将明文出现在URL上，比如登陆界面有可能被浏览器缓存。
+
+
+HTTPS：安全超文本传输协议（Secure Hypertext Transfer Protocol），它是一个安全通信通道，基于HTTP开发，用于客户计算机和服务器之间交换信息，使用安全套结字层（SSL）进行信息交换，即HTTP的安全版。
+
+
+十四.AFNetWorking、ASIHttpRequest两者的区别
+
+
+ASIHttpRequest功能强大，主要是在MRC下实现的，是对系统CFNetwork API进行了封装，支持HTTP协议的CFHTTP，配置比较复杂，并且ASIHttpRequest框架默认不会帮你监听网络改变，如果需要让ASIHttpRequest帮你监听网络状态改变，并且手动开始这个功能。
+
+
+AFNetWorking构建于NSURLConnection、NSOperation以及其他熟悉的Foundation技术之上。拥有良好的架构，丰富的API及模块构建方式，使用起来非常轻松。它基于NSOperation封装的，AFURLConnectionOperation子类。
+
+
+ASIHttpRequest是直接操作对象ASIHttpRequest是一个实现了NSCoding协议的NSOperation子类；AFNetWorking直接操作对象的AFHttpClient，是一个实现NSCoding和NSCopying协议的NSObject子类。
+
+
+同步请求：ASIHttpRequest直接通过调用一个startSynchronous方法；AFNetWorking默认没有封装同步请求，如果开发者需要使用同步请求，则需要重写getPath:paraments:success:failures方法，对于AFHttpRequestOperation进行同步处理。
+
+
+性能对比：AFNetworking请求优于ASIHttpRequest；
+
+
+十五.XML有各有什么不同的数据解析方式，JSON解析有哪些框架？（iOS面试题）
+
+
+XML数据解析的两种解析方式：DOM解析和SAX解析；
+
+
+DOM解析必须完成DOM树的构造，在处理规模较大的XML文档时就很耗内存，占用资源较多，读入整个XML文档并构建一个驻留内存的树结构（节点树），通过遍历树结构可以检索任意XML节点，读取它的属性和值，通常情况下，可以借助XPath查询XML节点；
+
+
+SAX与DOM不同，它是事件驱动模型，解析XML文档时每遇到一个开始或者结束标签、属性或者一条指令时，程序就产生一个事件进行相应的处理，一边读取XML文档一边处理，不必等整个文档加载完才采取措施，当在读取解析过程中遇到需要处理的对象，会发出通知进行处理。因此，SAX相对于DOM来说更适合操作大的XML文档。
+-JSON解析：性能比较好的主要是第三方的JSONKIT和iOS自带的JSON解析类，其中自带的JSON解析性能最高，只能用于iOS5之后。
+
+
+十六.SVN的使用
+
+
+SVN=版本控制+备份服务器，可以把SVN当成备份服务器，并且可以帮助你记住每次上服务器的档案内容，并自动赋予每次变更的版本；
+
+
+SVN的版本控制：所有上传版本都会帮您记录下来，也有版本分支及合并等功能。SVN可以让不同的开发者存取同样的档案，并且利用SVN Server作为档案同步的机制，即您有档案更新时，无需将档案寄送给您的开发成员。SVN的存放档案方式是采用差异备份的方式，即会备份到不同的地方，节省硬盘空间，也可以对非文字文件进行差异备份。
+
+
+SVN的重要性：备份工作档案的重要性、版本控管的重要性、伙伴间的数据同步的重要性、备份不同版本是很耗费硬盘空间的；
+
+
+防止冲突：
+1.防止代码冲突：不要多人同时修改同一文件，例如：A、B都修改同一个文件，先让A修改，然后提交到服务器，然后B更新下来，再进行修改；
+2.服务器上的项目文件Xcodeproj，仅让一个人管理提交，其他人只更新，防止文件发生冲突。
+
+
+十七.如何高效的进行网络消息的推送
+
+
+一种是Apple自己提供的通知服务（APNS服务器）、一种是用第三方推送机制。
+
+
+首先应用发送通知，系统弹出提示框询问用户是否允许，当用户允许后向苹果服务器(APNS)请求deviceToken，并由苹果服务器发送给自己的应用，自己的应用将DeviceToken发送自己的服务器，自己服务器想要发送网络推送时将deviceToken以及想要推送的信息发送给苹果服务器，苹果服务器将信息发送给应用。
+
+
+推送信息内容，总容量不超过256个字节；
+
+
+iOS SDK本身提供的APNS服务器推送，它可以直接推送给目标用户并根据您的方式弹出提示。
+优点：不论应用是否开启，都会发送到手机端；
+缺点：消息推送机制是苹果服务端控制，个别时候可能会有延迟，因为苹果服务器也有队列来处理所有的消息请求；
+
+
+第三方推送机制，普遍使用Socket机制来实现，几乎可以达到即时的发送到目标用户手机端，适用于即时通讯类应用。
+优点：实时的，取决于心跳包的节奏；
+缺点：iOS系统的限制，应用不能长时间的后台运行，所以应用关闭的情况下这种推送机制不可用。
+
+
+十八.网络七层协议
+
+
+应用层：
+1.用户接口、应用程序；
+2.Application典型设备：网关；
+3.典型协议、标准和应用：TELNET、FTP、HTTP
+
+
+表示层：
+1.数据表示、压缩和加密presentation
+2.典型设备：网关
+3.典型协议、标准和应用：ASCLL、PICT、TIFF、JPEG|MPEG
+4.表示层相当于一个东西的表示，表示的一些协议，比如图片、声音和视频MPEG。
+
+
+会话层：
+1.会话的建立和结束；
+2.典型设备：网关；
+3.典型协议、标准和应用：RPC、SQL、NFS、X WINDOWS、ASP
+
+
+传输层：
+1.主要功能：端到端控制Transport；
+2.典型设备：网关；
+3.典型协议、标准和应用：TCP、UDP、SPX
+
+
+网络层：
+1.主要功能：路由、寻址Network；
+2.典型设备：路由器；
+3.典型协议、标准和应用：IP、IPX、APPLETALK、ICMP；
+
+
+数据链路层：
+1.主要功能：保证无差错的疏忽链路的data link；
+2.典型设备：交换机、网桥、网卡；
+3.典型协议、标准和应用：802.2、802.3ATM、HDLC、FRAME RELAY；
+
+
+物理层：
+1.主要功能：传输比特流Physical；
+2.典型设备：集线器、中继器
+3.典型协议、标准和应用：V.35、EIA/TIA-232.
+
+
+十九.知道关键字volatile有什么含意?
+
+一个定义为volatile的变量是说这变量可能会被意想不到地改变，这样，编译器就不会去假设这个变量的值了。精确地说就是，优化器在用到这个变量时必须每次都小心地重新读取这个变量的值，而不是使用保存在寄存器里的备份。下面是volatile变量的几个例子：
+• 并行设备的硬件寄存器（如：状态寄存器）；
+•一个中断服务子程序中会访问到的非自动变量(Non-automatic variables)；
+• 多线程应用中被几个任务共享的变量。
+
+二十.属性property修饰符的作用
+
+
+getter=getName、setter=setName：设置setter与getter的方法名；
+
+
+readwrite、readonly：设置可供访问级别；
+
+
+assign：方法直接赋值，不进行任何retain操作，为了解决原类型与环循引用问题；
+
+
+retain：其setter方法对参数进行release旧值再* retain新值，所有实现都是这个顺序；
+
+
+copy：其setter方法进行copy操作，与retain处理流程一样，先对旧值release，再copy出新的对象，retainCount为1。这是为了减少对上下文的依赖而引入的机制。
+
+
+nonatomic：非原子性访问，不加同步， 多线程并发访问会提高性能。注意，如果不加此属性，则默认是两个访问方法都为原子型事务访问。
+
+二十一：XIB与Storyboards的优缺点
+优点：
+
+XIB：在编译前就提供了可视化界面，可以直接拖控件，也可以直接给控件添加约束，更直观一些，而且类文件中就少了创建控件的代码，确实简化不少，通常每个XIB对应一个类。
+Storyboard：在编译前提供了可视化界面，可拖控件，可加约束，在开发时比较直观，而且一个storyboard可以有很多的界面，每个界面对应一个类文件，通过storybard，可以直观地看出整个App的结构。
+
+缺点：
+
+XIB：需求变动时，需要修改XIB很大，有时候甚至需要重新添加约束，导致开发周期变长。XIB载入相比纯代码自然要慢一些。对于比较复杂逻辑控制不同状态下显示不同内容时，使用XIB是比较困难的。当多人团队或者多团队开发时，如果XIB文件被发动，极易导致冲突，而且解决冲突相对要困难很多。
+Storyboard：需求变动时，需要修改storyboard上对应的界面的约束，与XIB一样可能要重新添加约束，或者添加约束会造成大量的冲突，尤其是多团队开发。对于复杂逻辑控制不同显示内容时，比较困难。当多人团队或者多团队开发时，大家会同时修改一个storyboard，导致大量冲突，解决起来相当困难。
+
+二十二：内存的使用和优化的注意事项
+
+
+重用问题：如UITableViewCells、UICollectionViewCells、UITableViewHeaderFooterViews设置正确的reuseIdentifier，充分重用；
+
+
+尽量把views设置为不透明：当opque为NO的时候，图层的半透明取决于图片和其本身合成的图层为结果，可提高性能；
+
+
+不要使用太复杂的XIB/Storyboard：载入时就会将XIB/storyboard需要的所有资源，包括图片全部载入内存，即使未来很久才会使用。那些相比纯代码写的延迟加载，性能及内存就差了很多；
+
+
+选择正确的数据结构：学会选择对业务场景最合适的数组结构是写出高效代码的基础。比如，数组: 有序的一组值。使用索引来查询很快，使用值查询很慢，插入/删除很慢。字典: 存储键值对，用键来查找比较快。集合: 无序的一组值，用值来查找很快，插入/删除很快。
+gzip/zip压缩：当从服务端下载相关附件时，可以通过gzip/zip压缩后再下载，使得内存更小，下载速度也更快。
+
+
+延迟加载：对于不应该使用的数据，使用延迟加载方式。对于不需要马上显示的视图，使用延迟加载方式。比如，网络请求失败时显示的提示界面，可能一直都不会使用到，因此应该使用延迟加载。
+
+
+数据缓存：对于cell的行高要缓存起来，使得reload数据时，效率也极高。而对于那些网络数据，不需要每次都请求的，应该缓存起来，可以写入数据库，也可以通过plist文件存储。
+
+
+处理内存警告：一般在基类统一处理内存警告，将相关不用资源立即释放掉
+重用大开销对象：一些objects的初始化很慢，比如NSDateFormatter和NSCalendar，但又不可避免地需要使用它们。通常是作为属性存储起来，防止反复创建。
+
+
+避免反复处理数据：许多应用需要从服务器加载功能所需的常为JSON或者XML格式的数据。在服务器端和客户端使用相同的数据结构很重要;
+
+
+使用Autorelease Pool：在某些循环创建临时变量处理数据时，自动释放池以保证能及时释放内存;
+
+
+正确选择图片加载方式：UIImage加载方式
+
+
+二十三：基于CTMediator的组件化方案，有哪些核心组成？
+假如主APP调用某业务A，那么需要以下组成部分：
+
+CTMediator类，该类提供了函数 - (id)performTarget:(NSString *)targetName action:(NSString *)actionName params:(NSDictionary *)params shouldCacheTarget:(BOOL)shouldCacheTarget;
+这个函数可以根据targetName生成对象，根据actionName构造selector，然后可以利用performSelector:withObject:方法，在目标上执行动作。
+业务A的实现代码，另外要加一个专门的类，用于执行Target Action
+类的名字的格式：Target_%@，这里就是Target_A。
+这个类里面的方法，名字都以Action_开头，需要传参数时，都统一以NSDictionary*的形式传入。
+CTMediator类会创建Target类的对象，并在对象上执行方法。
+业务A的CTMediator扩展
+扩展里声明了所有A业务的对外接口，参数明确，这样外部调用者可以很容易理解如何调用接口。
+在扩展的实现里，对Target, Action需要通过硬编码进行指定。由于扩展的负责方和业务的负责方是相同的，所以这个不是问题。
+
+二十四：为什么CTMediator方案优于基于Router的方案？
+Router的缺点：
+
+在组件化的实施过程中，注册URL并不是充分必要条件。组件是不需要向组件管理器注册URL的，注册了URL之后，会造成不必要的内存常驻。注册URL的目的其实是一个服务发现的过程，在iOS领域中，服务发现的方式是不需要通过主动注册的，使用runtime就可以了。另外，注册部分的代码的维护是一个相对麻烦的事情，每一次支持新调用时，都要去维护一次注册列表。如果有调用被弃用了，是经常会忘记删项目的。runtime由于不存在注册过程，那就也不会产生维护的操作，维护成本就降低了。 由于通过runtime做到了服务的自动发现，拓展调用接口的任务就仅在于各自的模块，任何一次新接口添加，新业务添加，都不必去主工程做操作，十分透明。
+在iOS领域里，一定是组件化的中间件为openURL提供服务，而不是openURL方式为组件化提供服务。如果在给App实施组件化方案的过程中是基于openURL的方案的话，有一个致命缺陷：非常规对象(不能被字符串化到URL中的对象，例如UIImage)无法参与本地组件间调度。
+在本地调用中使用URL的方式其实是不必要的，如果业务工程师在本地间调度时需要给出URL，那么就不可避免要提供params，在调用时要提供哪些params是业务工程师很容易懵逼的地方。
+为了支持传递非常规参数，蘑菇街的方案采用了protocol，这个会侵入业务。由于业务中的某个对象需要被调用，因此必须要符合某个可被调用的protocol，然而这个protocol又不存在于当前业务领域，于是当前业务就不得不依赖public Protocol。这对于将来的业务迁移是有非常大的影响的。
+
+CTMediator的优点：
+
+调用时，区分了本地应用调用和远程应用调用。本地应用调用为远程应用调用提供服务。
+组件仅通过Action暴露可调用接口，模块与模块之间的接口被固化在了Target-Action这一层，避免了实施组件化的改造过程中，对Business的侵入，同时也提高了组件化接口的可维护性。
+方便传递各种类型的参数。
+
+二十五：MVVM设计模式
+组成部分如下图所示：
+
+在这个设计模式里，核心是ViewModel，它是一种特殊类型的model，代表了应用中UI的状态。它包含如下内容：
+
+每个UI控件的一些属性。例如，text field控件的当前文本，某个button是否是enable状态。
+视图可以执行的动作，例如按钮点击或者是手势。
+
+将ViewModel想象为视图的模型，会比较容易理解。
+MVVM模式中，三个组件的关系比MVC模式的要简单，有下面的严格规则：
+
+视图引用ViewModel，但反向不成立。
+ViewModel引用Model，但反向不成立。
+
+如果违背了上面两条规则，那么就是错误的MVVM实施行为。
+这种模式的好处：
+
+轻量级的视图(控制器)， 所有的UI逻辑都位于ViewModel中。
+易测试性。可以在没有视图的情况下，运行整个应用。
+
+二十六：weak修饰的释放则自动被置为nil的实现原理
+
+
+Runtime维护着一个Weak表，用于存储指向某个对象的所有Weak指针
+
+
+Weak表是Hash表，Key是所指对象的地址，Value是Weak指针地址的数组
+
+
+在对象被回收的时候，经过层层调用，会最终触发下面的方法将所有Weak指针的值设为nil。* runtime源码，objc-weak.m 的 arr_clear_deallocating 函数
+
+
+weak指针的使用涉及到Hash表的增删改查，有一定的性能开销.
+
+
+二十七：HTTPS的加密原理
+
+
+服务器端用非对称加密(RSA)生成公钥和私钥
+
+
+然后把公钥发给客户端, 服务器则保存私钥
+
+
+客户端拿到公钥后, 会生成一个密钥, 这个密钥就是将来客户端和服务器用来通信的钥匙
+
+
+然后客户端用公钥对密钥进行加密, 再发给服务器
+
+
+服务器拿到客户端发来的加密后的密钥后, 再使用私钥解密密钥, 到此双方都获得通信的钥匙
+
+
+二十八：你认为开发中那些导致crash?
+
+当iOS设备上的App应用闪退时，操作系统会生成一个crash日志，保存在设备上。crash日志上有很多有用的信息，比如每个正在执行线程的完整堆栈跟踪信息和内存映像，这样就能够通过解析这些信息进而定位crash发生时的代码逻辑，从而找到App闪退的原因。
+
+
+通常来说，crash产生来源于两种问题：违反iOS系统规则导致的crash和App代码逻辑BUG导致的crash
+
+1.应用逻辑的Bug
+
+SEGV：（Segmentation Violation，段违例），无效内存地址，比如空指针，未初始化指针，栈溢出等；
+SIGABRT：收到Abort信号，可能自身调用abort()或者收到外部发送过来的信号；
+SIGBUS：总线错误。与SIGSEGV不同的是，SIGSEGV访问的是无效地址（比如虚存映射不到物理内存），而SIGBUS访问的是有效地址，但总线访问异常（比如地址对齐问题）；
+SIGILL：尝试执行非法的指令，可能不被识别或者没有权限；
+SIGFPE：Floating Point Error，数学计算相关问题（可能不限于浮点计算），比如除零操作；
+SIGPIPE：管道另一端没有进程接手数据； 常见的崩溃原因基本都是代码逻辑问题或资源问题，比如数组越界，访问野指针或者资源不存在，或资源大小写错误等
+
+2.违反iOS系统规则产生crash的三种类型
+
+
+内存报警闪退
+
+当iOS检测到内存过低时，它的VM系统会发出低内存警告通知，尝试回收一些内存；如果情况没有得到足够的改善，iOS会终止后台应用以回收更多内存；最后，如果内存还是不足，那么正在运行的应用可能会被终止掉。在Debug模式下，可以主动将客户端执行的动作逻辑写入一个log文件中，这样程序童鞋可以将内存预警的逻辑写入该log文件，当发生如下截图中的内存报警时，就是提醒当前客户端性能内存吃紧，可以通过Instruments工具中的Allocations 和 Leaks模块库来发现内存分配问题和内存泄漏问题。
+
+
+
+响应超时
+
+当应用程序对一些特定的事件（比如启动、挂起、恢复、结束）响应不及时，苹果的Watchdog机制会把应用程序干掉，并生成一份相应的crash日志。
+
+
+
+用户强制退出
+
+一看到“用户强制退出”，首先可能想到的双击Home键，然后关闭应用程序。不过这种场景一般是不会产生crash日志的，因为双击Home键后，所有的应用程序都处于后台状态，而iOS随时都有可能关闭后台进程，当应用阻塞界面并停止响应时这种场景才会产生crash日志。这里指的“用户强制退出”场景，是稍微比较复杂点的操作：先按住电源键，直到出现“滑动关机”的界面时，再按住Home键，这时候当前应用程序会被终止掉，并且产生一份相应事件的crash日志。
+
+
+
+二十九：分析下SDWebImage
+1.SDWebImage 加载图片的流程
+1.入口 setImageWithURL:placeholderImage:options: 会先把 placeholderImage 显示，然后 SDWebImageManager 根据 URL 开始处理图片。
+2.进入 SDWebImageManager-downloadWithURL:delegate:options:userInfo:，交给 SDImageCache 从缓存查找图片是否已经下载 queryDiskCacheForKey:delegate:userInfo:.
+3.先从内存图片缓存查找是否有图片，如果内存中已经有图片缓存，SDImageCacheDelegate 回调 imageCache:didFindImage:forKey:userInfo: 到 SDWebImageManager。
+4.SDWebImageManagerDelegate 回调 webImageManager:didFinishWithImage: 到 UIImageView+WebCache 等前端展示图片。
+5.如果内存缓存中没有，生成 NSInvocationOperation 添加到队列开始从硬盘查找图片是否已经缓存。
+6.根据 URLKey 在硬盘缓存目录下尝试读取图片文件。这一步是在 NSOperation 进行的操作，所以回主线程进行结果回调 notifyDelegate:。
+7.如果上一操作从硬盘读取到了图片，将图片添加到内存缓存中（如果空闲内存过小，会先清空内存缓存）。SDImageCacheDelegate 回调 imageCache:didFindImage:forKey:userInfo:。进而回调展示图片。
+8.如果从硬盘缓存目录读取不到图片，说明所有缓存都不存在该图片，需要下载图片，回调 imageCache:didNotFindImageForKey:userInfo:。
+9.共享或重新生成一个下载器 SDWebImageDownloader 开始下载图片。
+10.图片下载由 NSURLConnection 来做，实现相关 delegate 来判断图片下载中、下载完成和下载失败。
+11.connection:didReceiveData: 中利用 ImageIO 做了按图片下载进度加载效果。
+12.connectionDidFinishLoading: 数据下载完成后交给 SDWebImageDecoder 做图片解码处理。
+13.图片解码处理在一个 NSOperationQueue 完成，不会拖慢主线程 UI。如果有需要对下载的图片进行二次处理，最好也在这里完成，效率会好很多。
+14.在主线程 notifyDelegateOnMainThreadWithInfo: 宣告解码完成，imageDecoder:didFinishDecodingImage:userInfo: 回调给 SDWebImageDownloader。
+15.imageDownloader:didFinishWithImage: 回调给 SDWebImageManager 告知图片下载完成。
+16.通知所有的 downloadDelegates 下载完成，回调给需要的地方展示图片。
+17.将图片保存到 SDImageCache 中，内存缓存和硬盘缓存同时保存。写文件到硬盘也在以单独 NSInvocationOperation 完成，避免拖慢主线程。
+18.SDImageCache 在初始化的时候会注册一些消息通知，在内存警告或退到后台的时候清理内存图片缓存，应用结束的时候清理过期图片。
+19.SDWI 也提供了 UIButton+WebCache 和 MKAnnotationView+WebCache，方便使用。
+20.SDWebImagePrefetcher 可以预先下载图片，方便后续使用。
+
+SDWebImage原理图
+
+SDWebImage原理图
+2. SDImageCache是怎么做数据管理的？
+SDImageCache分两个部分，一个是内存层面的，一个是硬盘层面的。内存层面的相当是个缓存器，以Key-Value的形式存储图片。当内存不够的时候会清除所有缓存图片。用搜索文件系统的方式做管理，文件替换方式是以时间为单位，剔除时间大于一周的图片文件。当SDWebImageManager向SDImageCache要资源时，先搜索内存层面的数据，如果有直接返回，没有的话去访问磁盘，将图片从磁盘读取出来，然后做Decoder，将图片对象放到内存层面做备份，再返回调用层。
+3.内部做Decoder的原因 (典型的空间换时间)
+由于UIImage的imageWithData函数是每次画图的时候才将Data解压成ARGB的图像，所以在每次画图的时候，会有一个解压操作，这样效率很低，但是只有瞬时的内存需求。为了提高效率通过SDWebImageDecoder将包装在Data下的资源解压，然后画在另外一张图片上，这样这张新图片就不再需要重复解压了
+三十：SEL和Method和IMP分别说下再谈下对IMP的理解?
+Method
+先看下定义
+1. runtime.h
+2. /// An opaque type that represents a method in a class definition.代表类定义中一个方法的不透明类型
+3. typedef struct objc_method *Method;
+4. 
+5. struct objc_method {
+6.     SEL method_name                                          OBJC2_UNAVAILABLE;
+7.     char *method_types                                       OBJC2_UNAVAILABLE;
+8.     IMP method_imp                                           OBJC2_UNAVAILABLE;
+9. } 
+复制代码
+Method和我们平时理解的函数是一致的，就是表示能够独立完成一个功能的一段代码，比如：
+1. - (void)logName
+2. {
+3.     NSLog(@"name");
+4. } 
+复制代码
+这段代码，就是一个函数。
+我们来看下objc_method这个结构体的内容：
+
+SEL method_name 方法名
+char *method_types 方法类型
+IMP method_imp 方法实现
+
+在这个结构体重，我们已经看到了SEL和IMP，说明SEL和IMP其实都是Method的属性。
+我们接着来看SEL。
+SEL
+还是先看定义
+1. Objc.h
+2. /// An opaque type that represents a method selector.代表一个方法的不透明类型
+3. typedef struct objc_selector *SEL;
+复制代码
+这里要先说明下selector和SEL的关系，我在写本文的时候，其实搜索的是selector，直到我看到了selector的定义，才发现我理解一直不对。
+1. @property SEL selector;
+复制代码
+在文档中，selector的定义都是这样声明，也就是说：selector是SEL的一个实例，只是在iOS中，selector的使用是如此的频繁，我们才会把他当成一个概念。
+selector怎么理解呢？我们可以想想股票，比如市场上有如此多公司在纳斯达克上市，而且他们的名字又非常的长，或者有些公司的名称也是相似的，都是**有限公司。那当市场去指定一个股票的时候，效率会非常低，当你着急想买股票的时候，你会跟你的经纪人说：“hi，peter，给我买一百股Tuniu limited liability company的股票吗？”，也许等你说完，经纪人输入完，市场就变化了，所以纳斯达克通常用代码，比如“TOUR”.这里的selector有类似的作用，就是让我们能够快速找到对应的函数。
+文档中是这样讲的：
+
+A method selector is a C string that has been registered (or “mapped“) with the Objective-C runtime. Selectors generated by the compiler are automatically mapped by the runtime when the class is loaded.
+
+在iOS中，runtime会在运行的时候，通过load函数，将所有的methodhash然后map到set中。这样在运行的时候，寻找selector的速度就会非常快，不会因为runtime特性牺牲太多的性能。
+selector既然是一个string，我觉得应该是类似className+method的组合，命名规则有两条：
+
+同一个类，selector不能重复
+不同的类，selector可以重复
+
+这也带来了一个弊端，我们在写C代码的时候，经常会用到函数重载，就是函数名相同，参数不同，但是这在Objective-C中是行不通的，因为selector只记了method的name，没有参数，所以没法区分不同的method。
+比如：
+1. - (void)caculate(NSInteger)num;
+2. 
+3. - (void)caculate(CGFloat)num;
+复制代码
+是会报错的。
+我们只能通过命名来区别：
+1. - (void)caculateWithInt(NSInteger)num;
+2. 
+3. - (void)caculateWithFloat(CGFloat)num;
+复制代码
+IMP
+看下IMP的定义
+1. /// A pointer to the function of a method implementation.  指向一个方法实现的指针
+2. typedef id (*IMP)(id, SEL, ...); 
+3. #endif
+复制代码
+这个就比较好理解了，就是指向最终实现程序的内存地址的指针。
+综上，在iOS的runtime中，Method通过selector和IMP两个属性，实现了快速查询方法及实现，相对提高了性能，又保持了灵活性。
+三十一：Autorelease的原理 ?
+
+ARC下面,我们使用@autoreleasepool{}来使用一个Autoreleasepool,实际上UIKit 通过RunLoopObserver 在RunLoop二次Sleep间Autoreleasepool进行Pop和Push,将这次Loop产生的autorelease对象释放 对编译器会编译大致如下:
+
+1. void *DragonLiContext = objc_ AutoreleasepoolPush();
+2. // {} 的 code 
+3. objc_ AutoreleasepoolPop(DragonLiContext);
+复制代码
+
+释放时机: 当前RunLoop迭代结束时候释放.
+
+三十二：ARC的工作原理
+
+
+Automatic Reference Counting，自动引用计数，即ARC,ARC会自动帮你插入retain和release语句,ARC编译器有两部分，分别是前端编译器和优化器
+
+
+前端编译器:前端编译器会为“拥有的”每一个对象插入相应的release语句。如果对象的所有权修饰符是__strong，那么它就是被拥有的。如果在某个方法内创建了一个对象，前端编译器会在方法末尾自动插入release语句以销毁它。而类拥有的对象（实例变量/属性）会在dealloc方法内被释放。事实上，你并不需要写dealloc方法或调用父类的dealloc方法，ARC会自动帮你完成一切。此外，由编译器生成的代码甚至会比你自己写的release语句的性能还要好，因为编辑器可以作出一些假设。在ARC中，没有类可以覆盖release方法，也没有调用它的必要。ARC会通过直接使用objc_release来优化调用过程。而对于retain也是同样的方法。ARC会调用objc_retain来取代保留消息
+
+
+ARC优化器: 虽然前端编译器听起来很厉害的样子，但代码中有时仍会出现几个对retain和release的重复调用。ARC优化器负责移除多余的retain和release语句，确保生成的代码运行速度高于手动引用计数的代码
+
+
+三十三：用户需要上传和下载一个重要的资料文件，应该如何判断用户本次是否上传成功和下载成功了?
+
+用MD5验证文件的完整性！(仅仅通过代码来判断当前次的请求发送结束或者收到数据结束不可以的)
+当客户端上传一个文件的时候，在请求body里面添加该文件的MD5值来告诉服务器，服务器接受文件完毕以后通过校验收到的文件的MD5值与请求body里面的MD5值来最终确定本次上传是否成功
+当客户端下载一个文件的时候，在响应头里面收到了服务器附带的该文件的MD5值，文件下载结束以后，通过获取下载后文件的MD5值与本次请求服务器返回的响应头中的MD5值做一个比较，来最终判断本次下载是否成功
+MD5，是一个将任意长度的数据字符串转化成短的固定长度的值的单向操作。任意两个字符串不应有相同的散列值
+MD5校验可以应用在多个领域，比如说机密资料的检验，下载文件的检验，明文密码的加密等。MD5校验原理举例：如客户往我们数据中心同步一个文件，该文件使用MD5校验，那么客户在发送文件的同时会再发一个存有校验码的文件，我们拿到该文件后做MD5运算，得到的计算结果与客户发送的校验码相比较，如果一致则认为客户发送的文件没有出错，否则认为文件出错需要重新发送。
+
+三十四：isa指针的作用
+
+
+对象的isa指向类，类的isa指向元类（meta class），元类isa指向元类的根类。isa帮助一个对象找到它的方法
+
+
+是一个Class 类型的指针. 每个实例对象有个isa的指针,他指向对象的类，而Class里也有个isa的指针, 指向meteClass(元类)。元类保存了类方法的列表。当类方法被调用时，先会从本身查找类方法的实现，如果没有，元类会向他父类查找该方法。同时注意的是：元类（meteClass）也是类，它也是对象。元类也有isa指针,它的isa指针最终指向的是一个根元类(root meteClass).根元类的isa指针指向本身，这样形成了一个封闭的内循环。
+
+
+三十五：与 NSURLConnection 相比，NSURLsession 改进哪些?
+
+
+可以配置每个 session 的缓存，协议，cookie，以及证书策略（credential policy），甚至跨程序共享这些信息
+
+
+session task。它负责处理数据的加载以及文件和数据在客户端与服务端之间的上传和下载。NSURLSessionTask 与 NSURLConnection 最大的相似之处在于它也负责数据的加载，最大的不同之处在于所有的 task 共享其创造者 NSURLSession 这一公共委托者（common delegate）
+
+
+三十六：使用drawRect有什么影响？
+
+drawRect方法依赖Core Graphics框架来进行自定义的绘制
+
+
+
+缺点：它处理touch事件时每次按钮被点击后，都会用setNeddsDisplay进行强制重绘；而且不止一次，每次单点事件触发两次执行。这样的话从性能的角度来说，对CPU和内存来说都是欠佳的。特别是如果在我们的界面上有多个这样的UIButton实例，那就会很糟糕了
+
+
+这个方法的调用机制也是非常特别. 当你调用 setNeedsDisplay 方法时, UIKit 将会把当前图层标记为dirty,但还是会显示原来的内容,直到下一次的视图渲染周期,才会将标记为 dirty 的图层重新建立Core Graphics上下文,然后将内存中的数据恢复出来, 再使用 CGContextRef 进行绘制
+
+
+三十七：什么时候会报unrecognized selector的异常？如何避免?
+
+
+当调用该对象上某个方法,而该对象上没有实现这个方法的时候， 可以通过“消息转发”进行解决，如果还是不行就会报unrecognized selector异常
+
+
+objc是动态语言，每个方法在运行时会被动态转为消息发送，即：objc_msgSend(receiver, selector)，整个过程介绍如下：
+
+objc在向一个对象发送消息时，runtime库会根据对象的isa指针找到该对象实际所属的类然后在该类中的方法列表以及其父类方法列表中寻找方法运行 如果，在最顶层的父类中依然找不到相应的方法时，程序在运行时会挂掉并抛出异常unrecognized selector sent to XXX 。但是在这之前，objc的运行时会给出三次拯救程序崩溃的机会
+
+
+
+三次拯救程序崩溃的机会
+
+Method resolution:objc运行时会调用+resolveInstanceMethod:或者 +resolveClassMethod:，让你有机会提供一个函数实现。 如果你添加了函数并返回 YES，那运行时系统就会重新启动一次消息发送的过程 如果 resolve 方法返回 NO ，运行时就会移到下一步，消息转发
+Fast forwarding:如果目标对象实现了-forwardingTargetForSelector:，Runtime 这时就会调用这个方法，给你把这个消息转发给其他对象的机会 只要这个方法返回的不是nil和self，整个消息发送的过程就会被重启，当然发送的对象会变成你返回的那个对象。否则，就会继续Normal Fowarding。这里叫Fast，只是为了区别下一步的转发机制。因为这一步不会创建任何新的对象，但Normal forwarding转发会创建一个NSInvocation对象，相对Normal forwarding转发更快点，所以这里叫Fast forwarding
+Normal forwarding 这一步是Runtime最后一次给你挽救的机会。 首先它会发送-methodSignatureForSelector:消息获得函数的参数和返回值类型。 如果-methodSignatureForSelector:返回nil，Runtime则会发出-doesNotRecognizeSelector:消息，程序这时也就挂掉了。 如果返回了一个函数签名，Runtime就会创建一个NSInvocation对象并发送-forwardInvocation:消息给目标对象
+
+
+
+三十八：iOS中常用的数据存储方式有哪些？
+
+
+综合
+
+所有的本地持久化数据存储的本质都是写文件，而且只能存到沙盒中。
+沙盒机制是苹果的一项安全机制，本质就是系统给每个应用分配了一个文件夹来存储数据，而且每个应用只能访问分配给自己的那个文件夹，其他应用的文件夹是不能访问的。
+数据存储的核心都是写文件。主要有四种持久化方式：属性列表，对象序列化，SQLite 数据库, CoreData
+属性列表：应用于少量数据存储，比如登陆的用户信息，应用程序配置信息等。只有NSString ，NSArray，NSDictory，NSData，可以WriteToFile；存储的依旧是plist文件，plist文件可以存储的7种数据类型：array，dictory，string，bool，data，date，number。
+
+
+
+详细
+
+对象序列化：最终也是存为属性列表文件，如果程序中，需要存储的时候，直接存储对象比较方便，例如有一个设置类，我们可以把设置类的对象直接存储，就没必要再把里面的每一个属性单独存到文件中。对象序列化是将一个实现了NSCoding协议的对象，通过序列化（NSKeydArchiver）的形式，将对象中的属性抽取出来，转化成二进制流，也就是NSData，NSData可以选择write to file 或者存储到NSUserdefault中。 必须实现的两个方法 encodeWithCoder，initWithCoder。对象序列化的本质就是 对象NSData。
+SQLite： 适合大量，重复，有规律的数据存储。而且频繁的读取，删除，过滤数据，这种适合使用数据库 (iOS 使用第三方FMDB)
+CoreData： Sqlite叫做关系型数据库，CoreData 是一中OR-Mapping的思想 ，O代表对象Object，R代表relationship，Mapping代表映射，直译过来就是对象关系映射，其实就是把对象的属性和表中的字段自动映射，简化程序员的负担，以面向对象的方式操作数据库。ORMapping是一种思想，CoreData实现了这种思想，在Java中，hibernate 也是对ORMapping的一种实现，只是利用java实现的。
+CoreData 本质还是数据库，只不过使用起来更加面向对象，不关注二维的表结构，而是只需要关注对象，纯面向对象的数据操作方式。我们直接使用数据库的时候，如果向数据库中插入数据，一般是把一个对象的属性和数据库中某个表的字段一一对应，然后把对象的属性存储到具体的表字段中.取一条数据的时候，把表中的一行数据取出，同样需要再封装到对象的属性中，这样的方式有点繁琐，不面向对象。CoreData解决的问题就是不需要这个中间的转换过程，看起来是直接把对象存储进去，并且取出来，不关心表的存在，实际内部帮你做好了映射关系。
+
+
+
+三十九：描述一个ViewController的生命周期
+
+当我们调用UIViewControlller的view时，
+系统首先判断当前的 UIViewControlller是否存在* view，如果存在直接返回view，
+如果不存在的话，会调用loadview方法，
+然后判断loadview方法是否是自定义方法，
+如果是自定义方法，就执行自定义方法，
+如果不是自定义方法，判断当时视图控制器是否有* xib、stroyboard。
+如果有xib、stroyboard 就加载xib、stroyboard。
+如果没有创建一个空白的view。
+调用viewDidLoad方法。
+最后返回view
+
+四十：Block中可以修改全局变量，全局静态变量，局部静态变量吗？
+
+
+可以.深入研究Block捕获外部变量和__block实现原理
+
+
+全局变量和静态全局变量的值改变，以及它们被Block捕获进去，因为是全局的，作用域很广
+
+
+静态变量和自动变量，被Block从外面捕获进来，成为__main_block_impl_0这个结构体的成员变量
+
+
+自动变量是以值传递方式传递到Block的构造函数里面去的。Block只捕获Block中会用到的变量。由于只捕获了自动变量的值，并非内存地址，所以Block内部不能改变自动变量的值。
+
+
+Block捕获的外部变量可以改变值的是静态变量，静态全局变量，全局变量
+
+
+Block就分为以下3种
+
+
+_NSConcreteStackBlock:只用到外部局部变量、成员属性变量，且没有强指针引用的block都是StackBlock。 StackBlock的生命周期由系统控制的，一旦返回之后，就被系统销毁了,是不持有对象的
+
+_NSConcreteStackBlock所属的变量域一旦结束，那么该Block就会被销毁。在ARC环境下，编译器会自动的判断，把Block自动的从栈copy到堆。比如当Block作为函数返回值的时候，肯定会copy到堆上
+
+
+
+_NSConcreteMallocBlock:有强指针引用或copy修饰的成员属性引用的block会被复制一份到堆中成为MallocBlock，没有强指针引用即销毁，生命周期由程序员控制,是持有对象的
+
+
+_NSConcreteGlobalBlock:没有用到外界变量或只用到全局变量、静态变量的block为_NSConcreteGlobalBlock，生命周期从创建到应用程序结束,也不持有对象
+
+
+
+
+
+
+ARC环境下，一旦Block赋值就会触发copy，__block就会copy到堆上，Block也是__NSMallocBlock。ARC环境下也是存在__NSStackBlock的时候，这种情况下，__block就在栈上
+
+
+ARC下，Block中引用id类型的数据有没有__block都一样都是retain，而对于基础变量而言，没有的话无法修改变量值，有的话就是修改其结构体令其内部的forwarding指针指向拷贝后的地址达到值的修改
+
+
+
+
+
+
 
 算法（Algorithm）是指用来操作数据、解决程序问题的一组方法。对于同一个问题，使用不同的算法，也许最终得到的结果是一样的，但在过程中消耗的资源和时间却会有很大的区别。
 
